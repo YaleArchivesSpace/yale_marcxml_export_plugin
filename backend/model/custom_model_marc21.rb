@@ -13,6 +13,13 @@ class MARCModel < ASpaceExport::ExportModel
     :dates => :handle_dates,
   }
 
+  @resource_map = {
+    [:id_0, :id_1, :id_2, :id_3] => :handle_id,
+    :ead_location => :handle_ead_loc,
+    :ead_id => :handle_ead_id,
+    :notes => :handle_notes,
+    :finding_aid_description_rules => df_handler('fadr', '040', ' ', ' ', 'e')
+  }
 
   def self.assemble_controlfield_string(obj)
     date = obj.dates[0] || {}
@@ -101,9 +108,12 @@ class MARCModel < ASpaceExport::ExportModel
         tag = case t['term_type']
         when 'uniform_title'; 't'
         when 'genre_form', 'style_period'; 'v'
-        when 'topical', 'cultural_context'; 'x'
         when 'temporal'; 'y'
         when 'geographic'; 'z'
+        # since function/occupation/technique are options in ASpace
+        #, we need to map those to ensure valid MARC records.
+        # previously just topical and culutral_context were mapped to 'x'
+        else 'x'
         end
         sfs << [(tag), t['term']]
       end
@@ -129,10 +139,11 @@ class MARCModel < ASpaceExport::ExportModel
 
       if relator
         relator_sf = ['4', relator]
-      elsif role == 'source'
-        relator_sf =  ['e', 'former owner']
-      else
-        relator_sf = ['e', 'creator']
+      # no ma'am.  enough with the supplied date.  how do you now when someone actually recorded former owner or creator????
+      #elsif role == 'source'
+      #  relator_sf =  ['e', 'former owner']
+      #else
+      #  relator_sf = ['e', 'creator']
       end
 
       ind2 = ' '
@@ -227,9 +238,12 @@ class MARCModel < ASpaceExport::ExportModel
         tag = case t['term_type']
               when 'uniform_title'; 't'
               when 'genre_form', 'style_period'; 'v'
-              when 'topical', 'cultural_context'; 'x'
               when 'temporal'; 'y'
               when 'geographic'; 'z'
+              # since function/occupation/technique are options in ASpace
+              #, we need to map those to ensure valid MARC records.
+              # previously just topical and culutral_context were mapped to 'x'
+              else 'x'
               end
         sfs << [tag, t['term']]
       end
@@ -284,15 +298,13 @@ class MARCModel < ASpaceExport::ExportModel
       df('245', '1', '0').with_sfs([code, val])
     end
   end
-  def handle_ead_loc(ead_loc)
-    df('555', ' ', ' ').with_sfs(
-                                  ['a', "Finding aid online:"],
-                                  ['u', ead_loc]
-                                )
-    df('856', '4', '2').with_sfs(
-                                  ['y', "Finding aid online"],
-                                  ['u', ead_loc]
-                                )
+  def handle_ead_id(ead_id)
+    ead_id_present = ead_id && !ead_id.empty?
+    if ead_id_present
+      df('900', ' ', ' ').with_sfs(
+                                    ['a', ead_id]
+                                  )
+    end
   end
   def handle_notes(notes)
 
@@ -305,7 +317,7 @@ class MARCModel < ASpaceExport::ExportModel
       when 'physloc'; "Location of resource"
       when 'phystech'; "Physical Characteristics / Technical Requirements"
       when 'physfacet'; "Physical Facet"
-      when 'processinfo'; "Processing Information"
+      #when 'processinfo'; "Processing Information"
       else; nil
       end
 
@@ -313,10 +325,12 @@ class MARCModel < ASpaceExport::ExportModel
 
       when 'arrangement', 'fileplan'
         ['351','b']
-      when 'odd', 'dimensions', 'physdesc', 'materialspec', 'physloc', 'phystech', 'physfacet', 'processinfo'
+      when 'odd', 'dimensions', 'physdesc', 'materialspec', 'physloc', 'phystech', 'physfacet'#, 'processinfo'
         ['500','a']
       when 'accessrestrict'
-        ['506','a']
+        # mdc:  add this to the core code.
+        ind1 = note['rights_restriction'] ? '1' : '0'
+        ['506', ind1, ' ', 'a']
       when 'abstract'
         ['520', '3', ' ', 'a']
       when 'prefercite'
@@ -347,7 +361,6 @@ class MARCModel < ASpaceExport::ExportModel
       else
         nil
       end
-
       unless marc_args.nil?
         text = prefix ? "#{prefix}: " : ""
         text += ASpaceExport::Utils.extract_note_text(note)

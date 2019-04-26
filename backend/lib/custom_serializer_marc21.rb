@@ -35,10 +35,10 @@ class MARCSerializer < ASpaceExport::Serializer
   private
 
   def _root(marc, xml)
-
+# the following fix for the schemaLocation should be added to the core code. !!!
     xml.collection('xmlns' => 'http://www.loc.gov/MARC21/slim',
                  'xmlns:xsi' => 'http://www.w3.org/2001/XMLSchema-instance',
-                 'xsi:schemaLocation' => 'http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd'){
+                 'xsi:schemaLocation' => 'http://www.loc.gov/MARC21/slim http://www.loc.gov/standards/marcxml/schema/MARC21slim.xsd'){
 
       xml.record {
 
@@ -49,6 +49,8 @@ class MARCSerializer < ASpaceExport::Serializer
         # customizing this to add additional
         # controlfields
         # need to add 005
+        # ....for Yale, we don't need to add an 005 since our post-processing of the MARC record
+        # will add that  if required for others, could/shouldn't this be added to the core code instead?
         marc.controlfields.each { |cf|
           xml.controlfield(:tag => cf[:tag]) {
             xml.text cf[:text]

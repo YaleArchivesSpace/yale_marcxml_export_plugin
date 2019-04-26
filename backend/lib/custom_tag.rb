@@ -1,4 +1,4 @@
-class NYUCustomTag
+class CustomTag
   attr_reader :tag_info, :subfield_info
 
   def initialize(tag_info, *args)

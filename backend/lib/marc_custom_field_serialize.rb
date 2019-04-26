@@ -1,4 +1,4 @@
-class MARCCustomFieldSerialize
+class MARCCustomFieldSerializer
 
   def initialize(record)
     @record = record
@@ -26,22 +26,25 @@ class MARCCustomFieldSerialize
   end
 
   def datafields
-    
+
     extra_fields = []
     @field_pairs = []
 
     # Do this on all records
     extra_fields << add_024_tag
-    extra_fields << add_035_tag
-  
+
+
     # Only process the 853, 863 and 949 if the records is from tamwag, fales or nyuarchives
     if(get_allowed_values.has_key?(get_record_repo_value)) then
-      extra_fields << add_853_tag
+      # mdc: no need for these.  may also need to add local access restriction type.
+      # extra_fields << add_853_tag
       if @record.aspace_record['top_containers']
         top_containers = @record.aspace_record['top_containers']
         top_containers.each_key{ |id|
           info = top_containers[id]
           if(info[:barcode] != nil) then
+            # mdc:  not sure if we'll keep the 863 here or just create
+            # stand-alone holdings records during the post-processing step.
             @field_pairs << add_863_tag(info)
             @field_pairs << add_949_tag(info)
           end
@@ -112,31 +115,23 @@ class MARCCustomFieldSerialize
   def add_005_tag
     value = format_timestamp
     controlfield_hsh = get_controlfield_hash('005',value)
-    cf = NYUCustomTag.new(controlfield_hsh)
+    cf = CustomTag.new(controlfield_hsh)
     cf.add_controlfield_tag
   end
 
   def add_003_tag(org_code)
     controlfield_hsh = get_controlfield_hash('003',org_code)
-    cf = NYUCustomTag.new(controlfield_hsh)
+    cf = CustomTag.new(controlfield_hsh)
     cf.add_controlfield_tag
   end
+
   def add_024_tag
     subfields_hsh = {}
     value = "(#{get_repo_org_code})#{check_multiple_ids}"
     datafield_hsh = get_datafield_hash('024','7',' ')
     subfields_hsh[1] = get_subfield_hash('a',value)
     subfields_hsh[2] = get_subfield_hash('2','local')
-    datafield = NYUCustomTag.new(datafield_hsh,subfields_hsh)
-    datafield.add_datafield_tag
-  end
-  def add_035_tag
-    org_code = get_repo_org_code
-    value = "(#{get_repo_org_code})#{check_multiple_ids}-#{format_timestamp('date')}"
-    subfields_hsh = {}
-    datafield_hsh = get_datafield_hash('035','','')
-    subfields_hsh[1] = get_subfield_hash('a',value)
-    datafield = NYUCustomTag.new(datafield_hsh,subfields_hsh)
+    datafield = CustomTag.new(datafield_hsh,subfields_hsh)
     datafield.add_datafield_tag
   end
 
@@ -147,26 +142,26 @@ class MARCCustomFieldSerialize
     # since the subfield positions matter
     subfields_hsh[1] = get_subfield_hash('8','1')
     subfields_hsh[2] = get_subfield_hash('a','Box')
-    datafield = NYUCustomTag.new(datafield_hsh,subfields_hsh)
+    datafield = CustomTag.new(datafield_hsh,subfields_hsh)
     datafield.add_datafield_tag
   end
 
   def add_863_tag(info)
     subfields_hsh = {}
-    datafield_hsh = get_datafield_hash('863','','')
+    datafield_hsh = get_datafield_hash('863',' ',' ')
     # have to have a hash by position as the key
     # since the subfield positions matter
     subfields_hsh[1] = get_subfield_hash('8',"1.#{info[:indicator]}")
     subfields_hsh[2] = get_subfield_hash('a',info[:indicator])
     subfields_hsh[3] = get_subfield_hash('p',info[:barcode]) if info[:barcode]
-    datafield = NYUCustomTag.new(datafield_hsh,subfields_hsh)
+    datafield = CustomTag.new(datafield_hsh,subfields_hsh)
     datafield.add_datafield_tag
   end
 
   def add_949_tag(info)
 
     subfields_hsh = {}
-    datafield_hsh = get_datafield_hash('949','0','')
+    datafield_hsh = get_datafield_hash('949','0',' ')
     # have to have a hash by position as the key
     # since the subfield positions matter
     subfields_hsh[1] = get_subfield_hash('a','NNU')
@@ -180,7 +175,7 @@ class MARCCustomFieldSerialize
     subfields_hsh[11] = get_subfield_hash('e',info[:indicator])
     # merge repo code hash with existing subfield code hash
     subfields_hsh.merge!(process_repo_code)
-    datafield = NYUCustomTag.new(datafield_hsh,subfields_hsh)
+    datafield = CustomTag.new(datafield_hsh,subfields_hsh)
     datafield.add_datafield_tag
   end
 
@@ -270,7 +265,13 @@ class MARCCustomFieldSerialize
     # if location is one of the keys in location_hash,
     # output the value
     # else a blank subfield
-    location = loc_hsh.key?(location_info) ? loc_hsh[location_info] : ''
+
+    #location = loc_hsh.key?(location_info) ? loc_hsh[location_info] : ''
+
+    # mdc:
+    #let's keep the mapping in our XSLT file rather the plugin (e.g. location_hsh)
+    # so that we can update that mapping as needed without delay.
+    location = location_info ? location_info : ''
     # creating a subfield hash
     get_subfield_hash('s',location)
   end
