@@ -47,9 +47,23 @@ module ExportHelpers
         barcode = { barcode: data['barcode'] }
         hash = hash.merge(barcode)
       end
+
+      #mdc: add restriction info... can repeat, so let's grab what's there.
+      if data['active_restrictions']
+        restrictions = data['active_restrictions'].map {|lar| lar['local_access_restriction_type']}.uniq.join('; ')
+        restrictions = { restrictions: restrictions }
+        hash = hash.merge(restrictions)
+      end
+
       tc_info[id] = hash
 
       # Checking for nil location
+      # mdc:  aspace can have multiple "current" locations.  i know, i know.  what happens with nyu's approach?
+      # turns out that the last "current" location is the one that ASpace includes in the "location_display_string_u_sstr" field.
+      # that's something.
+      # ignoring this for now...  but we'll need to keep an eye on our data.
+      # otherwise we can go through the json, grab:
+        # container_locations -> _resolved -> title (or URI)
       if tc["location_display_string_u_sstr"] then
         location = tc["location_display_string_u_sstr"][0]
         tc_info[id].merge!({location: location})

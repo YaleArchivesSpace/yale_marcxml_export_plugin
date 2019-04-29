@@ -139,7 +139,7 @@ class MARCModel < ASpaceExport::ExportModel
 
       if relator
         relator_sf = ['4', relator]
-      # no ma'am.  enough with the supplied date.  how do you now when someone actually recorded former owner or creator????
+      # no ma'am.  enough with the supplied data.  how do you now when someone actually recorded former owner or creator????
       #elsif role == 'source'
       #  relator_sf =  ['e', 'former owner']
       #else

@@ -16,6 +16,8 @@ class MARCCustomFieldSerializer
     result = @record.controlfield_string
   end
 
+  #mdc: we don't need to add these fields since we're post processing the records...
+  #but keeping this around as is in case our requirements change.
   def controlfields
     cf = []
     org_codes = %w(NNU-TL NNU-F NyNyUA NyNyUAD NyNyUCH NBPol NyBlHS NHi)
@@ -31,10 +33,14 @@ class MARCCustomFieldSerializer
     @field_pairs = []
 
     # Do this on all records
-    extra_fields << add_024_tag
+    # mdc: not needed in our records.
+    # extra_fields << add_024_tag
 
 
     # Only process the 853, 863 and 949 if the records is from tamwag, fales or nyuarchives
+
+    # mdc: or, let's just always do this?... granted, we could have a single collection
+    # with upwards of 1500 boxes...  binary marc files have a size limit, so keep an eye out on this.
     if(get_allowed_values.has_key?(get_record_repo_value)) then
       # mdc: no need for these.  may also need to add local access restriction type.
       # extra_fields << add_853_tag
@@ -69,6 +75,8 @@ class MARCCustomFieldSerializer
     # arrange_datafields
   end
 
+  #mdc: not needed. we'll handle ordering outside of the plugin, but keeping this around as as a good example
+  #for how to handle this in the pulgin.
   def arrange_datafields
     min_tag = 863
     last_index = nil
@@ -158,6 +166,11 @@ class MARCCustomFieldSerializer
     datafield.add_datafield_tag
   end
 
+ #mdc:  nice approach.  in our case, we really just need location info,
+ # barcode, indicator, and local assess restriction type(s)
+ # have a restricted binary would also be nice (e.g. when just a restriction date is in place)
+ # also note that nyu's custom aspace extention does NOT include top containers associated with a Resource record, just the a.o. records.
+ # seems like it should... but we don't associated containers with resources, so perhaps that's okay.
   def add_949_tag(info)
 
     subfields_hsh = {}
@@ -169,10 +182,16 @@ class MARCCustomFieldSerializer
     subfields_hsh[5] = generate_subfield_j
     subfields_hsh[6] = get_subfield_hash('m','MIXED')
     subfields_hsh[7] = get_subfield_hash('i','04')
+    #mdc: in aspace, containers can have multiple "current" locations.  how should we handle this?
     subfields_hsh[8] = get_location(info[:location])
     subfields_hsh[9] = get_subfield_hash('p',info[:barcode]) if info[:barcode]
     subfields_hsh[10] = get_subfield_hash('w',"Box #{info[:indicator]}")
     subfields_hsh[11] = get_subfield_hash('e',info[:indicator])
+
+    #mdc: new one
+    #subfields_hsh[12] = get_restrictions(info[:restrictions]) if info[:restrictions]
+    subfields_hsh[12] = get_subfield_hash('x',info[:restrictions])
+
     # merge repo code hash with existing subfield code hash
     subfields_hsh.merge!(process_repo_code)
     datafield = CustomTag.new(datafield_hsh,subfields_hsh)
@@ -188,11 +207,14 @@ class MARCCustomFieldSerializer
     code
   end
 
+  #mdc:  not needed most likely.  we can probably add this for all repos.
+  #and ignore as needed.
   def get_allowed_values
     allowed_values = {}
     allowed_values['tamwag'] = { b: 'BTAM', c: 'TAM' }
     allowed_values['fales'] = { b: 'BFALE', c: 'FALES'}
     allowed_values['archives'] = { b: 'BARCH', c: 'MAIN' }
+    allowed_values['whatever'] = {}
     allowed_values
   end
 
@@ -252,6 +274,7 @@ class MARCCustomFieldSerializer
     get_subfield_hash('j',id)
   end
 
+  #mdc: not needed, but keeping around in case we decide to add the location mapping to the plugin.
   def location_hsh
     {
       "Clancy Cullen [Offsite]" => "DM",
