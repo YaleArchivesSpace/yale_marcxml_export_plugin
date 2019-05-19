@@ -39,7 +39,7 @@ class MARCCustomFieldSerializer
 
     # Only process the 853, 863 and 949 if the records is from tamwag, fales or nyuarchives
 
-    # mdc: or, let's just always do this?... granted, we could have a single collection
+    # mdc: or, let's just always do this at Yale?... granted, we could have a single collection
     # with upwards of 1500 boxes...  binary marc files have a size limit, so keep an eye out on this.
     if(get_allowed_values.has_key?(get_record_repo_value)) then
       # mdc: no need for these.  may also need to add local access restriction type.
@@ -177,7 +177,8 @@ class MARCCustomFieldSerializer
     datafield_hsh = get_datafield_hash('949','0',' ')
     # have to have a hash by position as the key
     # since the subfield positions matter
-    subfields_hsh[1] = get_subfield_hash('a','NNU')
+    # mdc: not sure what our defaults should be, so keeping as is for now and we can adjust later (and/or just in the XSLT step)
+    subfields_hsh[1] = get_subfield_hash('a','CtY')
     subfields_hsh[4] = get_subfield_hash('t','4')
     subfields_hsh[5] = generate_subfield_j
     subfields_hsh[6] = get_subfield_hash('m','MIXED')
@@ -211,10 +212,11 @@ class MARCCustomFieldSerializer
   #and ignore as needed.
   def get_allowed_values
     allowed_values = {}
-    allowed_values['tamwag'] = { b: 'BTAM', c: 'TAM' }
-    allowed_values['fales'] = { b: 'BFALE', c: 'FALES'}
+    #nyc value.  keeping this first one around as an example, in case we follow suit with the subfield mappings here.
     allowed_values['archives'] = { b: 'BARCH', c: 'MAIN' }
     allowed_values['whatever'] = {}
+    allowed_values['BRBL'] = {}
+    allowed_values['Divinity'] = {}
     allowed_values
   end
 

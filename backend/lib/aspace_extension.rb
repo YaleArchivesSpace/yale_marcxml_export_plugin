@@ -55,6 +55,10 @@ module ExportHelpers
         hash = hash.merge(restrictions)
       end
 
+      #mdc:  add series info???
+      #mdc:  add restriction end date (begin date)???
+      #mdc:  add restricted true/false???
+
       tc_info[id] = hash
 
       # Checking for nil location

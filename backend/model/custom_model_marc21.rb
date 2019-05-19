@@ -306,6 +306,7 @@ class MARCModel < ASpaceExport::ExportModel
                                   )
     end
   end
+
   def handle_notes(notes)
 
     notes.each do |note|
@@ -363,11 +364,31 @@ class MARCModel < ASpaceExport::ExportModel
       end
       unless marc_args.nil?
         text = prefix ? "#{prefix}: " : ""
-        text += ASpaceExport::Utils.extract_note_text(note)
+        text += local_extract_note_text(note, @include_unpublished)
         df!(*marc_args[0...-1]).with_sfs([marc_args.last, *Array(text)])
       end
 
     end
+  end
+
+  ## not a great place to put this, but we only want the first paragraphs
+  ## exported in each note, so we're going to use a different method rather than
+  ## ASpaceExport::Utils.extract_note_text.
+  def local_extract_note_text(note, include_unpublished = true)
+    subnotes = note['subnotes'] || []
+    # we just want the first, in case there are more than one... and when we grab it,
+    note_text = (Array(note['content']) +
+                subnotes.map { |sn|
+                  sn['content'] if (sn['jsonmodel_type'] == 'note_text' && include_unpublished || sn["publish"])
+                }.compact).join(' ')
+    # we want everything before the \n\n
+    # alternatively, we could handle this in the XSLT.
+    if note_text =~ /\n\n/
+      note_text = note_text.split(/\n\n/).first
+    end
+
+    return note_text.strip
+
   end
 
 end
