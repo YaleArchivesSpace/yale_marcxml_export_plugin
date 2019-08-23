@@ -189,9 +189,10 @@ class MARCCustomFieldSerializer
     subfields_hsh[10] = get_subfield_hash('w',"Box #{info[:indicator]}")
     subfields_hsh[11] = get_subfield_hash('e',info[:indicator])
 
-    #mdc: new one
-    #subfields_hsh[12] = get_restrictions(info[:restrictions]) if info[:restrictions]
+    #mdc: new one.  see the "process_top_containers" method in aspace_extension.rb
     subfields_hsh[12] = get_subfield_hash('x',info[:restrictions])
+    subfields_hsh[13] = get_subfield_hash('y',info[:restricted_boolean])
+    subfields_hsh[14] = get_subfield_hash('z',info[:restriction_dates])
 
     # merge repo code hash with existing subfield code hash
     subfields_hsh.merge!(process_repo_code)

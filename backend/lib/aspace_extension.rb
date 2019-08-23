@@ -53,11 +53,19 @@ module ExportHelpers
         restrictions = data['active_restrictions'].map {|lar| lar['local_access_restriction_type']}.uniq.join('; ')
         restrictions = { restrictions: restrictions }
         hash = hash.merge(restrictions)
+        #and why not grab the date, just in case.
+        restriction_dates = data['active_restrictions'].map {|d| d['end']}.uniq.join('; ')
+        restriction_dates = { restriction_dates: restriction_dates }
+        hash = hash.merge(restriction_dates)
       end
 
       #mdc:  add series info???
       #mdc:  add restriction end date (begin date)???
-      #mdc:  add restricted true/false???
+      #mdc:  add restricted true/false???.  yep, doing that here.
+      if data['restricted']
+        restricted = { restricted_boolean: data['restricted'] ? 'Y' : 'N' }
+        hash = hash.merge(restricted)
+      end
 
       tc_info[id] = hash
 

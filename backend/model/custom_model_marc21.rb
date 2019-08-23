@@ -22,6 +22,9 @@ class MARCModel < ASpaceExport::ExportModel
   @resource_map = {
     [:id_0, :id_1, :id_2, :id_3] => :handle_id,
     :ead_location => :handle_ead_loc,
+    :user_defined => :handle_user_defined,
+    #if missing, the file should be invalid for our purposes
+    :ead_id => df_handler('eadid', '035', ' ', ' ', '9'),
     :notes => :handle_notes,
     :finding_aid_description_rules => df_handler('fadr', '040', ' ', ' ', 'e')
   }
@@ -466,6 +469,15 @@ class MARCModel < ASpaceExport::ExportModel
     end
   end
 
+  def handle_user_defined(field)
+    ud_present = field && !field.empty?
+    if ud_present
+      if field['string_2']
+        u = field['string_2']
+        df!('035').with_sfs(['a', u])
+      end
+    end
+  end
 
   def handle_notes(notes)
 
@@ -549,11 +561,10 @@ class MARCModel < ASpaceExport::ExportModel
     subnotes.map { |sn|
       sn['content'] if (sn['jsonmodel_type'] == 'note_text' && include_unpublished || sn["publish"])
     }.compact).join(' ')
-    # we want everything before the \n\n
-    # alternatively, we could handle this in the XSLT.
-    if note_text =~ /\n\n/
-      note_text = note_text.split(/\n\n/).first
-    end
+    #would be nice to just grab the first paragraph, but we'll handle this during the post-processing step since we still need policies around 506 notes and the like.
+    #if note_text =~ /\n\n/
+    #  note_text = note_text.split(/\n\n/).first
+    #end
 
     return note_text.strip
 
