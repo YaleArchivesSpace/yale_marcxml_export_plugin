@@ -62,10 +62,8 @@ module ExportHelpers
       #mdc:  add series info???
       #mdc:  add restriction end date (begin date)???
       #mdc:  add restricted true/false???.  yep, doing that here.
-      if data['restricted']
-        restricted = { restricted_boolean: data['restricted'] ? 'Y' : 'N' }
-        hash = hash.merge(restricted)
-      end
+      restricted = { restricted_boolean: data['restricted'] ? 'Y' : 'N' }
+      hash = hash.merge(restricted)
 
       tc_info[id] = hash
 
