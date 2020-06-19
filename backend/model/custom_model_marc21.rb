@@ -25,6 +25,7 @@ class MARCModel < ASpaceExport::ExportModel
     :user_defined => :handle_user_defined,
     #if missing, the file should be invalid for our purposes
     :ead_id => df_handler('eadid', '035', ' ', ' ', '9'),
+    [:id, :jsonmodel_type] => :handle_ark,
     :notes => :handle_notes,
     :finding_aid_description_rules => df_handler('fadr', '040', ' ', ' ', 'e')
   }
@@ -258,7 +259,7 @@ class MARCModel < ASpaceExport::ExportModel
     end
   end
 
-  def handle_repo_code(repository, langcode)
+  def handle_repo_code(repository, *finding_aid_language)
     repo = repository['_resolved']
     return false unless repo
 
@@ -284,7 +285,7 @@ class MARCModel < ASpaceExport::ExportModel
     end
 
     df('852', ' ', ' ').with_sfs(*subfields_852)
-    df('040', ' ', ' ').with_sfs(['a', repo['org_code']], ['b', langcode],['c', repo['org_code']])
+    df('040', ' ', ' ').with_sfs(['a', repo['org_code']], ['b', finding_aid_language[0]],['c', repo['org_code']])
     # df('049', ' ', ' ').with_sfs(['a', repo['org_code']])
 
     if repo.has_key?('country') && !repo['country'].empty?
@@ -634,6 +635,23 @@ class MARCModel < ASpaceExport::ExportModel
                                   )
     end
   end
+
+  def handle_ark(id, type='resource')
+    # If ARKs are enabled, add an 856
+    #<datafield tag="856" ind1="4" ind2="2">
+    #  <subfield code="z">Archival Resource Key:</subfield>
+    #  <subfield code="u">ARK URL</subfield>
+    #</datafield>
+    if AppConfig[:arks_enabled]
+       ark_url = ArkName::get_ark_url(id, type.to_sym)
+       df('856', '4', '2').with_sfs(
+                                    ['z', "Archival Resource Key:"],
+                                    ['u', ark_url]
+                                  ) unless ark_url.nil? || ark_url.empty?
+
+    end
+  end
+  
 
   private
 
